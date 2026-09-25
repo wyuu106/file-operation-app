@@ -14,6 +14,12 @@ import { invoke } from "@tauri-apps/api/core";
  * rolledBack:number,items:ItemResult[]}} Report
  * @typedef {{originalPath:string,renamedPath:string,
  * status:string}} RecoveryItem
+ * @typedef {{originalName:string,
+ * renamedName:string,status:string}} HistoryItem
+ * @typedef {{id:number,executedAt:string,
+ * folder:string,changedCount:number,
+ * status:string,undoneAt:string|null,
+ * items:HistoryItem[]}} HistoryOperation
  */
 
 /**
@@ -122,4 +128,9 @@ export function getStatus() {
 /** @returns {Promise<RecoveryItem[]>} */
 export function getRecoveryItems() {
   return invoke("get_recovery_items");
+}
+
+/** @returns {Promise<HistoryOperation[]>} */
+export function getHistory() {
+  return invoke("get_history");
 }

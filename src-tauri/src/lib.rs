@@ -4,8 +4,9 @@ mod operations;
 mod platform;
 
 use model::{
-    FileInfo, OperationReport, Preview,
-    RecoveryItem, RenameTemplate, StoredPlan,
+    FileInfo, HistoryOperation, OperationReport,
+    Preview, RecoveryItem, RenameTemplate,
+    StoredPlan,
 };
 use rusqlite::Connection;
 use std::fs;
@@ -223,6 +224,15 @@ fn get_recovery_items(
         .map_err(|_| "DB_ERROR".into())
 }
 
+#[tauri::command]
+fn get_history(
+    state: tauri::State<AppState>,
+) -> Result<Vec<HistoryOperation>, String> {
+    let conn = database(&state)?;
+    db::history(&conn)
+        .map_err(|_| "DB_ERROR".into())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -256,6 +266,7 @@ pub fn run() {
             undo_last_rename,
             get_status,
             get_recovery_items,
+            get_history,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start app");

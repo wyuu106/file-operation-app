@@ -1,6 +1,7 @@
 use crate::model::{
-    Fingerprint, RecoveryItem, RenameTemplate,
-    StoredPlan, UndoItem,
+    Fingerprint, HistoryItem, HistoryOperation,
+    RecoveryItem, RenameTemplate, StoredPlan,
+    UndoItem,
 };
 use rusqlite::{params, Connection};
 use std::path::PathBuf;
@@ -212,6 +213,94 @@ pub fn last_completed(
         ) => Ok(None),
         Err(error) => Err(error),
     }
+}
+
+pub fn history(
+    conn: &Connection,
+) -> rusqlite::Result<Vec<HistoryOperation>> {
+    let mut operations = conn.prepare(
+        "SELECT id, executed_at, status, undone_at
+         FROM rename_operations
+         ORDER BY id DESC",
+    )?;
+    let rows =
+        operations.query_map([], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, Option<String>>(3)?,
+            ))
+        })?;
+    let mut result = Vec::new();
+    for row in rows {
+        let (id, executed_at, status, undone_at) =
+            row?;
+        let mut statement = conn.prepare(
+            "SELECT original_path, renamed_path,
+                    status
+             FROM rename_operation_items
+             WHERE operation_id = ?1
+             ORDER BY id",
+        )?;
+        let details =
+            statement.query_map([id], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            })?;
+        let mut folder = String::new();
+        let mut changed_count = 0;
+        let mut items = Vec::new();
+        for detail in details {
+            let (original, renamed, item_status) =
+                detail?;
+            let original_path =
+                PathBuf::from(&original);
+            let renamed_path =
+                PathBuf::from(&renamed);
+            if folder.is_empty() {
+                folder = original_path
+                    .parent()
+                    .unwrap_or(&original_path)
+                    .to_string_lossy()
+                    .into_owned();
+            }
+            if matches!(
+                item_status.as_str(),
+                "moved"
+                    | "undone"
+                    | "needs_review"
+            ) {
+                changed_count += 1;
+            }
+            items.push(HistoryItem {
+                original_name: original_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned(),
+                renamed_name: renamed_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned(),
+                status: item_status,
+            });
+        }
+        result.push(HistoryOperation {
+            id,
+            executed_at,
+            folder,
+            changed_count,
+            status,
+            undone_at,
+            items,
+        });
+    }
+    Ok(result)
 }
 
 pub fn undo_items(

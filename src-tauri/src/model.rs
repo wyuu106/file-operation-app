@@ -98,3 +98,23 @@ pub struct RecoveryItem {
     pub renamed_path: String,
     pub status: String,
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryItem {
+    pub original_name: String,
+    pub renamed_name: String,
+    pub status: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryOperation {
+    pub id: i64,
+    pub executed_at: String,
+    pub folder: String,
+    pub changed_count: usize,
+    pub status: String,
+    pub undone_at: Option<String>,
+    pub items: Vec<HistoryItem>,
+}

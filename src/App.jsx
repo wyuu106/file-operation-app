@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import * as api from "./api";
 import { userMessage } from "./errors";
-import FileSelection from "./FileSelection";
 import RenamePreview from "./RenamePreview";
-import TemplateEditor from "./TemplateEditor";
+import HistoryView from "./HistoryView";
+import HomeView from "./HomeView";
+import TemplatesView from "./TemplatesView";
 
 const collator = new Intl.Collator("ja", {
   numeric: true,
@@ -19,6 +20,10 @@ const recoveryLabels = {
 };
 
 export default function App() {
+  const [screen, setScreen] = useState(
+    /** @type {'home'|'templates'|'history'} */
+    ("home"),
+  );
   const [folder, setFolder] = useState("");
   const [files, setFiles] = useState(
     /** @type {api.FileInfo[]} */ ([]),
@@ -36,6 +41,10 @@ export default function App() {
     /** @type {api.Template|null|undefined} */
     (undefined),
   );
+  const [templateToDelete, setTemplateToDelete] =
+    useState(
+      /** @type {api.Template|null} */ (null),
+    );
   const [preview, setPreview] = useState(
     /** @type {api.Preview|null} */ (null),
   );
@@ -43,13 +52,17 @@ export default function App() {
     /** @type {string[]} */ ([]),
   );
   const [checking, setChecking] = useState(false);
+  const [confirmLeaving, setConfirmLeaving] =
+    useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [report, setReport] = useState(
     /** @type {api.Report|null} */ (null),
   );
-  const [canUndo, setCanUndo] = useState(false);
+  const [history, setHistory] = useState(
+    /** @type {api.HistoryOperation[]} */ ([]),
+  );
   const [reviewCount, setReviewCount] =
     useState(0);
   const [recoveryItems, setRecoveryItems] =
@@ -58,12 +71,15 @@ export default function App() {
     );
 
   async function refreshStatus() {
-    const [undo, review] = await api.getStatus();
-    setCanUndo(undo);
+    const [, review] = await api.getStatus();
     setReviewCount(review);
     setRecoveryItems(
       review ? await api.getRecoveryItems() : [],
     );
+  }
+
+  async function refreshHistory() {
+    setHistory(await api.getHistory());
   }
 
   async function refreshTemplates() {
@@ -80,6 +96,7 @@ export default function App() {
     Promise.all([
       refreshTemplates(),
       refreshStatus(),
+      refreshHistory(),
     ]).catch((caught) => {
       setError(userMessage(caught));
     });
@@ -129,6 +146,7 @@ export default function App() {
       setFiles(entries);
       setSelected([]);
       setPreview(null);
+      setConfirmLeaving(false);
       setReport(null);
       setNotice("");
     } catch (caught) {
@@ -185,6 +203,7 @@ export default function App() {
       setTemplateId(saved.id);
       setEditing(undefined);
       setPreview(null);
+      setConfirmLeaving(false);
       setNotice("テンプレートを保存したよ");
     } catch (caught) {
       setError(userMessage(caught));
@@ -193,18 +212,12 @@ export default function App() {
 
   /** @param {api.Template} template */
   async function removeTemplate(template) {
-    if (
-      !window.confirm(
-        `「${template.name}」を削除する？`,
-      )
-    ) {
-      return;
-    }
     setError("");
     try {
       await api.deleteTemplate(template.id);
       await refreshTemplates();
       setPreview(null);
+      setTemplateToDelete(null);
       setNotice("テンプレートを削除したよ");
     } catch (caught) {
       setError(userMessage(caught));
@@ -231,6 +244,7 @@ export default function App() {
         result.items.map((item) => item.newName),
       );
       setPreview(result);
+      setScreen("home");
       setReport(null);
     } catch (caught) {
       setError(userMessage(caught));
@@ -272,6 +286,7 @@ export default function App() {
       setFiles(await api.getFiles(folder));
       setSelected([]);
       await refreshStatus();
+      await refreshHistory();
       setNotice(
         result.failed
           ? "処理の一部を確認してね"
@@ -294,6 +309,7 @@ export default function App() {
         setFiles(await api.getFiles(folder));
       }
       await refreshStatus();
+      await refreshHistory();
       setNotice(
         result.failed
           ? "取り消せなかったファイルがあるよ"
@@ -306,6 +322,10 @@ export default function App() {
     }
   }
 
+  const undoTarget = history.find(
+    (item) => item.status === "completed",
+  );
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -316,30 +336,9 @@ export default function App() {
             <h1>ファイル名整理</h1>
           </div>
         </div>
-        <button
-          className="ghost"
-          disabled={!canUndo || busy}
-          onClick={undo}
-        >
-          ↶ 直前の変更を取り消す
-        </button>
       </header>
 
       <main>
-        <section className="hero">
-          <p className="eyebrow">
-            かんたん、一括整理
-          </p>
-          <h2>
-            いつものファイル名変更を、
-            まとめて終わらせよう。
-          </h2>
-          <p>
-            フォルダを選んで、名前を確認。
-            あとは一度に変更できるよ。
-          </p>
-        </section>
-
         {reviewCount > 0 && (
           <div className="banner warning">
             前回の処理に未確認の履歴が
@@ -382,140 +381,37 @@ export default function App() {
           </div>
         )}
 
-        <div className="workflow">
-          <span className="step active">
-            1 フォルダ
-          </span>
-          <span className="step">
-            2 テンプレート
-          </span>
-          <span className="step">
-            3 プレビュー
-          </span>
-          <span className="step">4 完了</span>
-        </div>
-
-        <section className="panel folder-panel">
-          <div>
-            <p className="eyebrow">FOLDER</p>
-            <h2>対象フォルダ</h2>
-            <p className="muted path-label">
-              {folder || "まだ選択されていないよ"}
-            </p>
-          </div>
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={chooseFolder}
-          >
-            フォルダを選ぶ
-          </button>
-        </section>
-
-        <div className="main-grid">
-          {folder && !preview && (
-            <FileSelection
-              files={files}
-              selected={selected}
-              onToggle={toggle}
-              onSelectAll={selectAll}
-              onClear={clearSelection}
-            />
-          )}
-
-          <section className="panel template-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">
-                  TEMPLATES
-                </p>
-                <h2>名前のルール</h2>
-              </div>
-              <button
-                className="text-button"
-                onClick={() => setEditing(null)}
-              >
-                ＋ 新しく作る
-              </button>
-            </div>
-            {templates.length ? (
-              <div className="template-list">
-                {templates.map((template) => (
-                  <div
-                    className="template-row"
-                    key={template.id}
-                  >
-                    <label>
-                      <input
-                        type="radio"
-                        name="template"
-                        checked={
-                          templateId ===
-                          template.id
-                        }
-                        onChange={() => {
-                          setTemplateId(
-                            template.id,
-                          );
-                          setPreview(null);
-                        }}
-                      />
-                      <span>{template.name}</span>
-                    </label>
-                    <div className="template-actions">
-                      <button
-                        onClick={() =>
-                          setEditing(template)
-                        }
-                      >
-                        編集
-                      </button>
-                      <button
-                        onClick={() =>
-                          removeTemplate(template)
-                        }
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty">
-                テンプレートを作ると、
-                次回から同じルールを使えるよ
-              </div>
-            )}
-          </section>
-        </div>
-
-        {editing !== undefined && (
-          <TemplateEditor
-            template={editing}
-            onSave={saveTemplate}
-            onCancel={() => setEditing(undefined)}
+        {!preview && screen === "home" && (
+          <HomeView
+            folder={folder}
+            files={files}
+            selected={selected}
+            templates={templates}
+            templateId={templateId}
+            undoTarget={undoTarget}
+            busy={busy}
+            onChooseFolder={chooseFolder}
+            onUndo={undo}
+            onToggle={toggle}
+            onSelectAll={selectAll}
+            onClear={clearSelection}
+            onTemplate={setTemplateId}
+            onPreview={makePreview}
           />
         )}
 
-        {!preview && folder && (
-          <div className="action-bar">
-            <span className="muted">
-              {selected.length}
-              件のファイルを選択中
-            </span>
-            <button
-              className="primary"
-              disabled={
-                busy ||
-                !selected.length ||
-                !templateId
-              }
-              onClick={makePreview}
-            >
-              変更後の名前を見る →
-            </button>
-          </div>
+        {!preview && screen === "templates" && (
+          <TemplatesView
+            templates={templates}
+            editing={editing}
+            onEdit={setEditing}
+            onDelete={setTemplateToDelete}
+            onSave={saveTemplate}
+          />
+        )}
+
+        {!preview && screen === "history" && (
+          <HistoryView history={history} />
         )}
 
         {preview && (
@@ -525,32 +421,147 @@ export default function App() {
             checking={checking}
             onTarget={setTarget}
             onExecute={execute}
-            onBack={() => setPreview(null)}
+            onBack={() => setConfirmLeaving(true)}
             busy={busy}
           />
         )}
 
-        {report && (
-          <section className="panel result-panel">
-            <p className="eyebrow">RESULT</p>
-            <h2>処理結果</h2>
-            <p>
-              成功 {report.succeeded}件 · 失敗{" "}
-              {report.failed}件 ·
-              元に戻したファイル
-              {report.rolledBack}件
-            </p>
-            {report.items.map((item, index) => (
-              <p
-                className="result-issue"
-                key={`${item.name}-${index}`}
-              >
-                {item.name}：{item.message}
+        {preview && confirmLeaving && (
+          <div className="dialog-backdrop">
+            <section
+              className="confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="leave-title"
+            >
+              <h2 id="leave-title">
+                プレビューを破棄
+              </h2>
+              <p>
+                現在のプレビューは破棄されますが、
+                画面を移動しますか？
               </p>
-            ))}
-          </section>
+              <div className="dialog-actions">
+                <button
+                  className="ghost"
+                  autoFocus
+                  onClick={() =>
+                    setConfirmLeaving(false)
+                  }
+                >
+                  キャンセル
+                </button>
+                <button
+                  className="primary"
+                  onClick={() => {
+                    setPreview(null);
+                    setConfirmLeaving(false);
+                  }}
+                >
+                  破棄して戻る
+                </button>
+              </div>
+            </section>
+          </div>
         )}
+
+        {templateToDelete && (
+          <div className="dialog-backdrop">
+            <section
+              className="confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-title"
+            >
+              <h2 id="delete-title">
+                テンプレートを削除
+              </h2>
+              <p>
+                「{templateToDelete.name}」を
+                削除する？
+              </p>
+              <div className="dialog-actions">
+                <button
+                  className="ghost"
+                  autoFocus
+                  onClick={() =>
+                    setTemplateToDelete(null)
+                  }
+                >
+                  キャンセル
+                </button>
+                <button
+                  className="primary danger"
+                  onClick={() =>
+                    removeTemplate(
+                      templateToDelete,
+                    )
+                  }
+                >
+                  削除する
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {!preview &&
+          screen === "home" &&
+          report && (
+            <section className="panel result-panel">
+              <p className="eyebrow">RESULT</p>
+              <h2>処理結果</h2>
+              <p>
+                成功 {report.succeeded}件 · 失敗{" "}
+                {report.failed}件 ·
+                元に戻したファイル
+                {report.rolledBack}件
+              </p>
+              {report.items.map((item, index) => (
+                <p
+                  className="result-issue"
+                  key={`${item.name}-${index}`}
+                >
+                  {item.name}：{item.message}
+                </p>
+              ))}
+            </section>
+          )}
       </main>
+      {!preview && (
+        <nav
+          className="bottom-nav"
+          aria-label="画面の切り替え"
+        >
+          {[
+            ["home", "ホーム"],
+            ["templates", "テンプレート"],
+            ["history", "変更履歴"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              className={
+                screen === key ? "active" : ""
+              }
+              aria-current={
+                screen === key
+                  ? "page"
+                  : undefined
+              }
+              onClick={() => {
+                setScreen(
+                  /** @type {typeof screen} */
+                  (key),
+                );
+                setError("");
+                setNotice("");
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

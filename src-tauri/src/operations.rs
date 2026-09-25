@@ -823,6 +823,18 @@ mod tests {
         .expect("execute");
         assert_eq!(report.succeeded, 1);
         assert!(test.file(&renamed).exists());
+        let history =
+            db::history(&conn).expect("history");
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].changed_count, 1);
+        assert_eq!(
+            history[0].status,
+            "completed"
+        );
+        assert_eq!(
+            history[0].items[0].original_name,
+            "A.pdf",
+        );
         drop(conn);
         let conn = Connection::open(&db_path)
             .expect("reopen db");
@@ -830,6 +842,10 @@ mod tests {
         assert_eq!(result.succeeded, 1);
         assert!(test.file("A.pdf").exists());
         assert!(!test.file(&renamed).exists());
+        let history =
+            db::history(&conn).expect("history");
+        assert_eq!(history[0].status, "undone");
+        assert_eq!(history[0].changed_count, 1);
     }
 
     #[test]
