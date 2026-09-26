@@ -1,10 +1,10 @@
-use crate::db;
-use crate::model::{
+use crate::models::{
     FileInfo, Fingerprint, ItemResult,
     OperationReport, PlanItem, Preview, Segment,
     Source, StoredPlan,
 };
-use crate::platform;
+use crate::repositories::db;
+use crate::services::platform;
 use chrono::Local;
 use rusqlite::Connection;
 use std::collections::HashSet;
@@ -691,6 +691,7 @@ pub fn undo(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::database;
 
     struct TestFolder(PathBuf);
 
@@ -807,7 +808,7 @@ mod tests {
             test.file("history.sqlite3");
         let mut conn = Connection::open(&db_path)
             .expect("db");
-        db::init(&conn).expect("schema");
+        database::init(&conn).expect("schema");
         let plan = create_plan(
             &test.path(),
             &["A.pdf".into()],
@@ -875,7 +876,7 @@ mod tests {
         let mut conn =
             Connection::open_in_memory()
                 .expect("db");
-        db::init(&conn).expect("schema");
+        database::init(&conn).expect("schema");
         let plan = create_plan(
             &test.path(),
             &["A.pdf".into()],
@@ -907,7 +908,7 @@ mod tests {
         let mut conn =
             Connection::open_in_memory()
                 .expect("db");
-        db::init(&conn).expect("schema");
+        database::init(&conn).expect("schema");
         let plan = create_plan(
             &test.path(),
             &["A.pdf".into()],

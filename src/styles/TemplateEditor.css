@@ -1,0 +1,74 @@
+.field-label {
+  display: block;
+  margin: 18px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.field-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+.segment-list {
+  display: grid;
+  gap: 8px;
+}
+.segment {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 50px;
+  padding: 8px;
+  border: 1px solid #e3eee5;
+  border-radius: 9px;
+  background: #fbfdfb;
+}
+.segment-index {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #e1efe4;
+  color: #2c7056;
+  font-size: 12px;
+}
+.segment-label {
+  min-width: 105px;
+  font-size: 13px;
+}
+.segment input {
+  flex: 1;
+  width: auto;
+}
+.segment-actions {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+.add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 13px 0;
+}
+.example-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 20px 0;
+  padding: 18px;
+  border-radius: 11px;
+  background: #edf7ef;
+}
+.example-box span,
+.example-box small {
+  color: #618071;
+  font-size: 12px;
+}
+.example-box strong {
+  overflow-wrap: anywhere;
+}
+.editor-footer {
+  justify-content: flex-end;
+}

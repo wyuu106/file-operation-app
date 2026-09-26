@@ -1,0 +1,213 @@
+:root {
+  font-family:
+    -apple-system, BlinkMacSystemFont,
+    "Hiragino Kaku Gothic ProN", "Yu Gothic",
+    sans-serif;
+  color: #183033;
+  background: #f3f7f4;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #68ba98;
+  outline-offset: 2px;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px
+    max(32px, calc((100vw - 1100px) / 2));
+  background: #fff;
+  border-bottom: 1px solid #dce8df;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff;
+  background: #146e5b;
+  font-size: 25px;
+}
+.brand h1 {
+  font-size: 18px;
+  margin: 1px 0;
+}
+.eyebrow {
+  margin: 0;
+  color: #38806c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+main {
+  width: 100%;
+  flex: 1;
+  max-width: 1100px;
+  margin: auto;
+  padding: 28px;
+}
+.panel {
+  margin-bottom: 18px;
+  padding: 26px;
+  border: 1px solid #dee9e2;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 5px 25px #1d423508;
+}
+.panel h2 {
+  margin: 5px 0 0;
+  font-size: 19px;
+}
+.panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.path-label {
+  overflow-wrap: anywhere;
+}
+.muted {
+  color: #6b7d77;
+}
+.small {
+  font-size: 12px;
+}
+button.primary,
+button.secondary,
+button.ghost {
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-weight: 750;
+}
+button.primary {
+  border: 1px solid #126c59;
+  background: #126c59;
+  color: #fff;
+}
+button.primary:hover:not(:disabled) {
+  background: #0d5a4a;
+}
+button.secondary {
+  border: 1px solid #b7d4c5;
+  background: #e9f6ed;
+  color: #165e4e;
+}
+button.ghost {
+  border: 1px solid #d2e2d8;
+  background: #fff;
+  color: #2d5c4e;
+}
+button.text-button {
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: #19705b;
+  font-weight: 750;
+}
+.file-toolbar button,
+.template-actions button,
+.segment-actions button,
+.chip {
+  border: 1px solid #d4e5d9;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #2b6b58;
+}
+.file-row input,
+.template-row input {
+  accent-color: #19705b;
+}
+.empty {
+  padding: 36px 10px;
+  color: #899a91;
+  text-align: center;
+  font-size: 13px;
+}
+.template-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f3f0;
+}
+.template-row label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.template-actions {
+  display: flex;
+  gap: 5px;
+}
+.template-actions button {
+  font-size: 11px;
+}
+.action-bar,
+.preview-footer,
+.editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.editor input,
+.preview-input input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #cbded0;
+  border-radius: 9px;
+  color: #183033;
+  background: #fff;
+}
+
+@media (max-width: 800px) {
+  .app-header {
+    padding: 16px 24px;
+  }
+  main {
+    padding: 18px;
+  }
+}

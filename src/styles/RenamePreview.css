@@ -1,0 +1,55 @@
+.preview-list {
+  display: grid;
+  gap: 9px;
+  margin: 22px 0;
+}
+.preview-row {
+  display: grid;
+  grid-template-columns: 35px 1fr 30px 1.3fr;
+  align-items: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e4ece5;
+  border-radius: 10px;
+}
+.preview-number {
+  color: #7fa38f;
+  font-weight: 800;
+}
+.preview-name,
+.preview-input {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.preview-name small,
+.preview-input label {
+  color: #84998c;
+  font-size: 11px;
+}
+.preview-arrow {
+  color: #7ba990;
+  padding-top: 17px;
+}
+.preview-input input[aria-invalid="true"] {
+  border-color: #d87165;
+}
+.field-error {
+  color: #bd4f49;
+  font-size: 11px;
+}
+
+@media (max-width: 800px) {
+  .preview-row {
+    grid-template-columns: 25px 1fr;
+  }
+  .preview-arrow {
+    display: none;
+  }
+  .preview-input {
+    grid-column: 2;
+  }
+}

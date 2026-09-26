@@ -7,9 +7,9 @@ import {
 } from "./template";
 
 /**
- * @param {{template:import('./api').Template|null,
+ * @param {{template:import('../api').Template|null,
  * onSave:(name:string,
- * segments:import('./api').Segment[])=>Promise<void>,
+ * segments:import('../api').Segment[])=>Promise<void>,
  * onCancel:()=>void}} props
  */
 export default function TemplateEditor({

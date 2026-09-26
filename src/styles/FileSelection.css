@@ -1,0 +1,44 @@
+.count-pill,
+.order-pill {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e2f2e8;
+  color: #216f56;
+  font-size: 12px;
+  font-weight: 700;
+}
+.file-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf1ed;
+}
+.file-toolbar span {
+  color: #7d8e85;
+  font-size: 11px;
+}
+.file-list {
+  max-height: 340px;
+  overflow-y: auto;
+}
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 46px;
+  border-bottom: 1px solid #f0f3f0;
+  cursor: pointer;
+}
+.file-icon {
+  color: #65a68b;
+  font-size: 18px;
+}
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}

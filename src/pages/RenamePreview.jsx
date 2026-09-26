@@ -1,5 +1,5 @@
 /**
- * @param {{preview:import('./api').Preview,
+ * @param {{preview:import('../api').Preview,
  * targets:string[],checking:boolean,
  * onTarget:(index:number,value:string)=>void,
  * onExecute:()=>void,onBack:()=>void,

@@ -1,13 +1,13 @@
-import FileSelection from "./FileSelection";
-import { shownTime } from "./HistoryView";
+import FileSelection from "../components/FileSelection";
+import { shownTime } from "../dateFormat";
 
 /**
  * @param {{folder:string,
- * files:import('./api').FileInfo[],
+ * files:import('../api').FileInfo[],
  * selected:string[],
- * templates:import('./api').Template[],
+ * templates:import('../api').Template[],
  * templateId:number|null,
- * undoTarget:import('./api').HistoryOperation|undefined,
+ * undoTarget:import('../api').HistoryOperation|undefined,
  * busy:boolean,onChooseFolder:()=>void,
  * onUndo:()=>void,onToggle:(name:string)=>void,
  * onSelectAll:()=>void,onClear:()=>void,

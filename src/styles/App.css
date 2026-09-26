@@ -1,0 +1,79 @@
+.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #fff;
+  border-top: 1px solid #dce8df;
+}
+.bottom-nav button {
+  min-width: 150px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #426559;
+  font-weight: 700;
+}
+.bottom-nav button.active {
+  background: #e2f2e8;
+  color: #146e5b;
+}
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #18303380;
+}
+.confirm-dialog {
+  width: min(100%, 420px);
+  padding: 26px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px #18303340;
+}
+.confirm-dialog h2 {
+  margin-top: 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.banner {
+  margin: 18px 0;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.banner.error {
+  color: #933c35;
+  background: #fff0ee;
+}
+.banner.warning {
+  color: #795526;
+  background: #fff5df;
+}
+.banner.success {
+  color: #1d694d;
+  background: #e4f4e9;
+}
+.result-issue {
+  padding: 8px 0;
+  color: #9b5048;
+  border-top: 1px solid #f0e1df;
+}
+
+@media (max-width: 800px) {
+  .bottom-nav button {
+    min-width: 0;
+    flex: 1;
+  }
+}

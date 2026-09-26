@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import * as api from "./api";
 import { userMessage } from "./errors";
-import RenamePreview from "./RenamePreview";
-import HistoryView from "./HistoryView";
-import HomeView from "./HomeView";
-import TemplatesView from "./TemplatesView";
+import RenamePreview from "./pages/RenamePreview";
+import HistoryView from "./pages/HistoryView";
+import HomeView from "./pages/HomeView";
+import TemplatesView from "./pages/TemplatesView";
 
 const collator = new Intl.Collator("ja", {
   numeric: true,

@@ -1,4 +1,4 @@
-/** @typedef {import('./api').Segment} Segment */
+/** @typedef {import('../api').Segment} Segment */
 
 export const defaultSegments = [
   { kind: "date", value: "" },

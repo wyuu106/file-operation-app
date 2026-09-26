@@ -1,12 +1,12 @@
-import TemplateEditor from "./TemplateEditor";
+import TemplateEditor from "../components/TemplateEditor";
 
 /**
- * @param {{templates:import('./api').Template[],
- * editing:import('./api').Template|null|undefined,
- * onEdit:(value:import('./api').Template|null|undefined)=>void,
- * onDelete:(value:import('./api').Template)=>void,
+ * @param {{templates:import('../api').Template[],
+ * editing:import('../api').Template|null|undefined,
+ * onEdit:(value:import('../api').Template|null|undefined)=>void,
+ * onDelete:(value:import('../api').Template)=>void,
  * onSave:(name:string,
- * segments:import('./api').Segment[])=>Promise<void>}}
+ * segments:import('../api').Segment[])=>Promise<void>}}
  * props
  */
 export default function TemplatesView({

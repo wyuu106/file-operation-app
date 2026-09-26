@@ -1,5 +1,5 @@
 /**
- * @param {{files:import('./api').FileInfo[],
+ * @param {{files:import('../api').FileInfo[],
  * selected:string[],onToggle:(name:string)=>void,
  * onSelectAll:()=>void,
  * onClear:()=>void}} props
