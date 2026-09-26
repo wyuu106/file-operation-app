@@ -25,6 +25,14 @@ pub struct Segment {
     pub value: String,
 }
 
+#[derive(Clone, Deserialize)]
+pub struct RenameInput {
+    #[serde(default)]
+    pub company: String,
+    #[serde(default)]
+    pub name: String,
+}
+
 #[derive(
     Clone, Serialize, Deserialize, PartialEq,
 )]
@@ -56,6 +64,7 @@ pub struct StoredPlan {
 pub struct PlanItem {
     pub original_name: String,
     pub new_name: String,
+    pub extension: String,
     pub issues: Vec<String>,
 }
 

@@ -1,0 +1,29 @@
+.info-list {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+}
+.info-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+.info-row label {
+  display: grid;
+  flex: 1;
+  gap: 5px;
+  min-width: 0;
+  color: #546b5c;
+  font-size: 12px;
+}
+.info-row input {
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .info-row {
+    flex-wrap: wrap;
+  }
+  .info-row label {
+    flex-basis: 70%;
+  }
+}

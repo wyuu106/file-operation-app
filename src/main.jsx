@@ -8,6 +8,7 @@ import "./styles/FileSelection.css";
 import "./styles/HistoryView.css";
 import "./styles/TemplateEditor.css";
 import "./styles/RenamePreview.css";
+import "./styles/RenameInfo.css";
 
 const root = document.getElementById("root");
 if (root) {

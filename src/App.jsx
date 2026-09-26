@@ -6,6 +6,10 @@ import RenamePreview from "./pages/RenamePreview";
 import HistoryView from "./pages/HistoryView";
 import HomeView from "./pages/HomeView";
 import TemplatesView from "./pages/TemplatesView";
+import {
+  formattedName,
+  readPattern,
+} from "./components/template";
 
 const collator = new Intl.Collator("ja", {
   numeric: true,
@@ -37,6 +41,12 @@ export default function App() {
   const [templateId, setTemplateId] = useState(
     /** @type {number|null} */ (null),
   );
+  const [inputs, setInputs] = useState(
+    /** @type {api.RenameInput[]} */
+    ([{ company: "", name: "" }]),
+  );
+  const [countMismatch, setCountMismatch] =
+    useState(false);
   const [editing, setEditing] = useState(
     /** @type {api.Template|null|undefined} */
     (undefined),
@@ -89,6 +99,39 @@ export default function App() {
       list.some((item) => item.id === current)
         ? current
         : (list[0]?.id ?? null),
+    );
+  }
+
+  const activeTemplate = templates.find(
+    (item) => item.id === templateId,
+  );
+  const segments = activeTemplate
+    ? readPattern(activeTemplate.pattern)
+    : [];
+  const useCompany = segments.some(
+    (item) => item.kind === "company",
+  );
+  const useName = segments.some(
+    (item) => item.kind === "name",
+  );
+
+  /** @param {number} id */
+  function chooseTemplate(id) {
+    setTemplateId(id);
+    setInputs([{ company: "", name: "" }]);
+    setPreview(null);
+  }
+
+  /** @param {number} index
+   * @param {'company'|'name'} key
+   * @param {string} value */
+  function changeInput(index, key, value) {
+    setInputs((current) =>
+      current.map((input, at) =>
+        at === index
+          ? { ...input, [key]: value }
+          : input,
+      ),
     );
   }
 
@@ -201,6 +244,7 @@ export default function App() {
           );
       await refreshTemplates();
       setTemplateId(saved.id);
+      setInputs([{ company: "", name: "" }]);
       setEditing(undefined);
       setPreview(null);
       setConfirmLeaving(false);
@@ -225,11 +269,31 @@ export default function App() {
   }
 
   async function makePreview() {
+    if (!folder || !templateId) {
+      return;
+    }
     if (
-      !folder ||
-      !templateId ||
-      !selected.length
+      (useCompany || useName) &&
+      inputs.length !== selected.length
     ) {
+      setCountMismatch(true);
+      return;
+    }
+    if (!selected.length) {
+      setError(userMessage("NO_SELECTION"));
+      return;
+    }
+    if (
+      (useCompany || useName) &&
+      inputs.some(
+        (input) =>
+          (useCompany &&
+            !input.company.trim()) ||
+          (useName &&
+            !formattedName(input.name)),
+      )
+    ) {
+      setError(userMessage("BAD_INPUT"));
       return;
     }
     setBusy(true);
@@ -239,6 +303,7 @@ export default function App() {
         folder,
         selected,
         templateId,
+        useCompany || useName ? inputs : [],
       );
       setTargets(
         result.items.map((item) => item.newName),
@@ -388,6 +453,9 @@ export default function App() {
             selected={selected}
             templates={templates}
             templateId={templateId}
+            inputs={inputs}
+            useCompany={useCompany}
+            useName={useName}
             undoTarget={undoTarget}
             busy={busy}
             onChooseFolder={chooseFolder}
@@ -395,7 +463,25 @@ export default function App() {
             onToggle={toggle}
             onSelectAll={selectAll}
             onClear={clearSelection}
-            onTemplate={setTemplateId}
+            onTemplate={chooseTemplate}
+            onInputChange={changeInput}
+            onAddInput={() =>
+              setInputs((current) =>
+                current.length < 10
+                  ? [
+                      ...current,
+                      { company: "", name: "" },
+                    ]
+                  : current,
+              )
+            }
+            onRemoveInput={(index) =>
+              setInputs((current) =>
+                current.filter((_, at) =>
+                  at !== index,
+                ),
+              )
+            }
             onPreview={makePreview}
           />
         )}
@@ -459,6 +545,43 @@ export default function App() {
                   }}
                 >
                   破棄して戻る
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {countMismatch && (
+          <div className="dialog-backdrop">
+            <section
+              className="confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="count-title"
+            >
+              <h2 id="count-title">
+                件数が一致しないよ
+              </h2>
+              <p>
+                入力した情報と選択した
+                ファイルの数が一致しません。
+              </p>
+              <p>入力情報：{inputs.length}件</p>
+              <p>
+                選択ファイル：{selected.length}件
+              </p>
+              <p>
+                同じ数になるように設定してね。
+              </p>
+              <div className="dialog-actions">
+                <button
+                  className="primary"
+                  autoFocus
+                  onClick={() =>
+                    setCountMismatch(false)
+                  }
+                >
+                  閉じる
                 </button>
               </div>
             </section>

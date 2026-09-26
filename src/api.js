@@ -5,8 +5,9 @@ import { invoke } from "@tauri-apps/api/core";
  * @typedef {{id:number,name:string,pattern:string,
  * createdAt:string,updatedAt:string}} Template
  * @typedef {{kind:string,value:string}} Segment
+ * @typedef {{company:string,name:string}} RenameInput
  * @typedef {{originalName:string,newName:string,
- * issues:string[]}} PlanItem
+ * extension:string,issues:string[]}} PlanItem
  * @typedef {{id:string,items:PlanItem[],
  * valid:boolean}} Preview
  * @typedef {{name:string,message:string}} ItemResult
@@ -77,17 +78,20 @@ export function deleteTemplate(id) {
  * @param {string} path
  * @param {string[]} selected
  * @param {number} templateId
+ * @param {RenameInput[]} inputs
  * @returns {Promise<Preview>}
  */
 export function previewRename(
   path,
   selected,
   templateId,
+  inputs,
 ) {
   return invoke("preview_rename", {
     path,
     selected,
     templateId,
+    inputs,
   });
 }
 

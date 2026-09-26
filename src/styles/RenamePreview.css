@@ -34,6 +34,26 @@
   color: #7ba990;
   padding-top: 17px;
 }
+.target-edit {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.target-edit input {
+  flex: 1;
+  min-width: 0;
+}
+.fixed-extension {
+  padding: 10px;
+  border: 1px solid #dce8df;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: #f2f6f3;
+  white-space: nowrap;
+}
+.target-edit:has(.fixed-extension) input {
+  border-radius: 8px 0 0 8px;
+}
 .preview-input input[aria-invalid="true"] {
   border-color: #d87165;
 }

@@ -45,6 +45,9 @@
 .action-bar {
   padding: 15px 0;
 }
+.mapping-panel p {
+  overflow-wrap: anywhere;
+}
 
 @media (max-width: 800px) {
   .undo-panel {

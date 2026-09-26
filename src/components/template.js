@@ -8,10 +8,21 @@ export const defaultSegments = [
 
 export const labels = {
   date: "日付",
-  original: "元のファイル名",
+  original: "ファイル名",
+  company: "会社名",
+  name: "名前",
   number: "連番",
   literal: "固定文字",
 };
+
+/** @param {string|undefined} value */
+export function formattedName(value) {
+  const plain = value
+    ?.trim()
+    .replace(/様+$/, "")
+    .trim();
+  return plain ? `${plain}様` : "";
+}
 
 /** @param {string} pattern */
 export function readPattern(pattern) {
@@ -40,11 +51,25 @@ export function exampleName(segments) {
         return day;
       case "original":
         return "invoice";
+      case "company":
+        return "【A社】";
+      case "name":
+        return formattedName("太郎");
       case "number":
         return "001";
       default:
         return segment.value || "固定文字";
     }
   });
-  return `${parts.join("_")}.pdf`;
+  const base = parts.reduce(
+    (name, part, index) =>
+      name +
+      (index > 0 &&
+      segments[index - 1].kind !== "company"
+        ? "_"
+        : "") +
+      part,
+    "",
+  );
+  return `${base}.pdf`;
 }

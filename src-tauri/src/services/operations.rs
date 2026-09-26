@@ -1,7 +1,7 @@
 use crate::models::{
     FileInfo, Fingerprint, ItemResult,
-    OperationReport, PlanItem, Preview, Segment,
-    Source, StoredPlan,
+    OperationReport, PlanItem, Preview,
+    RenameInput, Segment, Source, StoredPlan,
 };
 use crate::repositories::db;
 use crate::services::platform;
@@ -103,7 +103,8 @@ pub fn parse_segments(
     }
     for segment in &segments {
         match segment.kind.as_str() {
-            "date" | "original" | "number" => {}
+            "date" | "original" | "number"
+            | "company" | "name" => {}
             "literal"
                 if !segment
                     .value
@@ -177,11 +178,33 @@ fn extension(name: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
+fn extension_suffix(name: &str) -> String {
+    extension(name)
+        .map(|value| format!(".{value}"))
+        .unwrap_or_default()
+}
+
+fn company_value(value: &str) -> &str {
+    let trimmed = value.trim();
+    trimmed
+        .strip_prefix('【')
+        .and_then(|inner| {
+            inner.strip_suffix('】')
+        })
+        .unwrap_or(trimmed)
+        .trim()
+}
+
+fn name_value(value: &str) -> &str {
+    value.trim().trim_end_matches('様').trim()
+}
+
 fn generated_name(
     source: &str,
     segments: &[Segment],
     date: &str,
     index: usize,
+    input: Option<&RenameInput>,
 ) -> String {
     let parts: Vec<String> = segments
         .iter()
@@ -189,6 +212,26 @@ fn generated_name(
             match segment.kind.as_str() {
                 "date" => date.to_owned(),
                 "original" => stem(source),
+                "company" => format!(
+                    "【{}】",
+                    input
+                        .map(|value| {
+                            company_value(
+                                &value.company,
+                            )
+                        })
+                        .unwrap_or_default(),
+                ),
+                "name" => format!(
+                    "{}様",
+                    input
+                        .map(|value| {
+                            name_value(
+                                &value.name,
+                            )
+                        })
+                        .unwrap_or_default(),
+                ),
                 "number" => {
                     format!("{:03}", index)
                 }
@@ -199,7 +242,18 @@ fn generated_name(
             }
         })
         .collect();
-    let base = parts.join("_");
+    let mut base = String::new();
+    for (position, part) in
+        parts.iter().enumerate()
+    {
+        if position > 0
+            && segments[position - 1].kind
+                != "company"
+        {
+            base.push('_');
+        }
+        base.push_str(part);
+    }
     match extension(source) {
         Some(ext) => format!("{}.{}", base, ext),
         None => base,
@@ -210,11 +264,37 @@ pub fn create_plan(
     path: &str,
     selected: &[String],
     pattern: &str,
+    inputs: &[RenameInput],
 ) -> Result<StoredPlan, String> {
     let folder = folder(path)?;
     let segments = parse_segments(pattern)?;
     if selected.is_empty() {
         return Err("NO_SELECTION".into());
+    }
+    let uses_company = segments
+        .iter()
+        .any(|segment| segment.kind == "company");
+    let uses_name = segments
+        .iter()
+        .any(|segment| segment.kind == "name");
+    if uses_company || uses_name {
+        if inputs.len() != selected.len()
+            || inputs.len() > 10
+        {
+            return Err("INPUT_COUNT".into());
+        }
+        if inputs.iter().any(|input| {
+            (uses_company
+                && company_value(&input.company)
+                    .is_empty())
+                || (uses_name
+                    && name_value(&input.name)
+                        .is_empty())
+        }) {
+            return Err("BAD_INPUT".into());
+        }
+    } else if !inputs.is_empty() {
+        return Err("BAD_INPUT".into());
     }
     let mut seen = HashSet::new();
     let mut sources = Vec::new();
@@ -241,6 +321,7 @@ pub fn create_plan(
             &segments,
             &date,
             index + 1,
+            inputs.get(index),
         ));
     }
     Ok(StoredPlan {
@@ -332,6 +413,14 @@ pub fn preview(
         {
             issues.push(error.to_owned());
         } else {
+            if extension(&target)
+                != extension(&source.name)
+            {
+                issues.push(
+                    "拡張子は変更できないよ"
+                        .into(),
+                );
+            }
             let key = target.to_lowercase();
             if !seen.insert(key.clone()) {
                 issues.push(
@@ -366,6 +455,9 @@ pub fn preview(
         items.push(PlanItem {
             original_name: source.name.clone(),
             new_name: target,
+            extension: extension_suffix(
+                &source.name,
+            ),
             issues,
         });
     }
@@ -739,6 +831,7 @@ mod tests {
             &test.path(),
             &["C.pdf".into(), "A.pdf".into()],
             pattern(),
+            &[],
         )
         .expect("plan");
         assert_eq!(
@@ -751,6 +844,204 @@ mod tests {
         );
         assert!(test.file("C.pdf").exists());
         assert!(test.file("A.pdf").exists());
+    }
+
+    #[test]
+    fn input_rows_follow_selected_file_order() {
+        let test = TestFolder::new();
+        fs::write(test.file("B.pdf"), b"B")
+            .expect("B");
+        fs::write(test.file("A.pdf"), b"A")
+            .expect("A");
+        let pattern = r#"[
+            {"kind":"company"},
+            {"kind":"name"},
+            {"kind":"number"}
+        ]"#;
+        let inputs = [
+            RenameInput {
+                company: " B社 ".into(),
+                name: "花子".into(),
+            },
+            RenameInput {
+                company: "A社".into(),
+                name: "太郎".into(),
+            },
+        ];
+        let plan = create_plan(
+            &test.path(),
+            &["B.pdf".into(), "A.pdf".into()],
+            pattern,
+            &inputs,
+        )
+        .expect("plan");
+        assert_eq!(
+            plan.generated,
+            [
+                "【B社】花子様_001.pdf",
+                "【A社】太郎様_002.pdf",
+            ],
+        );
+        assert!(
+            preview(&plan, &plan.generated).valid
+        );
+        assert!(test.file("B.pdf").exists());
+    }
+
+    #[test]
+    fn input_count_and_required_values_are_checked(
+    ) {
+        let test = TestFolder::new();
+        fs::write(test.file("A.pdf"), b"A")
+            .expect("A");
+        let pattern = r#"[{"kind":"company"}]"#;
+        let selected = ["A.pdf".into()];
+        assert_eq!(
+            create_plan(
+                &test.path(),
+                &selected,
+                pattern,
+                &[],
+            )
+            .err()
+            .as_deref(),
+            Some("INPUT_COUNT"),
+        );
+        let blank = [RenameInput {
+            company: "   ".into(),
+            name: String::new(),
+        }];
+        assert_eq!(
+            create_plan(
+                &test.path(),
+                &selected,
+                pattern,
+                &blank,
+            )
+            .err()
+            .as_deref(),
+            Some("BAD_INPUT"),
+        );
+        let brackets_only = [RenameInput {
+            company: "【】".into(),
+            name: String::new(),
+        }];
+        assert_eq!(
+            create_plan(
+                &test.path(),
+                &selected,
+                pattern,
+                &brackets_only,
+            )
+            .err()
+            .as_deref(),
+            Some("BAD_INPUT"),
+        );
+    }
+
+    #[test]
+    fn company_brackets_are_not_doubled() {
+        let test = TestFolder::new();
+        fs::write(test.file("A.pdf"), b"A")
+            .expect("A");
+        let input = [RenameInput {
+            company: "【A社】".into(),
+            name: String::new(),
+        }];
+        let plan = create_plan(
+            &test.path(),
+            &["A.pdf".into()],
+            r#"[{"kind":"company"}]"#,
+            &input,
+        )
+        .expect("plan");
+        assert_eq!(
+            plan.generated[0],
+            "【A社】.pdf"
+        );
+        assert!(
+            preview(&plan, &plan.generated).valid
+        );
+    }
+
+    #[test]
+    fn name_suffix_is_added_only_once() {
+        let test = TestFolder::new();
+        fs::write(test.file("A.pdf"), b"A")
+            .expect("A");
+        let pattern = r#"[{"kind":"name"}]"#;
+        let input = [RenameInput {
+            company: String::new(),
+            name: " 太郎様 ".into(),
+        }];
+        let plan = create_plan(
+            &test.path(),
+            &["A.pdf".into()],
+            pattern,
+            &input,
+        )
+        .expect("plan");
+        assert_eq!(
+            plan.generated[0],
+            "太郎様.pdf"
+        );
+        assert!(
+            preview(&plan, &plan.generated).valid
+        );
+        let empty_name = [RenameInput {
+            company: String::new(),
+            name: "様".into(),
+        }];
+        assert_eq!(
+            create_plan(
+                &test.path(),
+                &["A.pdf".into()],
+                pattern,
+                &empty_name,
+            )
+            .err()
+            .as_deref(),
+            Some("BAD_INPUT"),
+        );
+    }
+
+    #[test]
+    fn extension_cannot_change_at_execution() {
+        let test = TestFolder::new();
+        fs::write(test.file("A.pdf"), b"A")
+            .expect("A");
+        let mut conn =
+            Connection::open_in_memory()
+                .expect("db");
+        database::init(&conn).expect("schema");
+        let plan = create_plan(
+            &test.path(),
+            &["A.pdf".into()],
+            pattern(),
+            &[],
+        )
+        .expect("plan");
+        let changed = ["請求書_001.txt".into()];
+        let checked = preview(&plan, &changed);
+        assert!(!checked.valid);
+        assert!(checked.items[0]
+            .issues
+            .iter()
+            .any(
+                |issue| issue.contains("拡張子"),
+            ));
+        assert!(execute(
+            &mut conn, &plan, &changed
+        )
+        .is_err(),);
+        assert_eq!(
+            fs::read(test.file("A.pdf"))
+                .expect("original"),
+            b"A",
+        );
+        assert!(!test
+            .file("請求書_001.txt")
+            .exists());
     }
 
     #[test]
@@ -785,6 +1076,7 @@ mod tests {
             &test.path(),
             &["A.pdf".into(), "B.pdf".into()],
             pattern(),
+            &[],
         )
         .expect("plan");
         let targets = [
@@ -813,6 +1105,7 @@ mod tests {
             &test.path(),
             &["A.pdf".into()],
             pattern(),
+            &[],
         )
         .expect("plan");
         let renamed = plan.generated[0].clone();
@@ -881,6 +1174,7 @@ mod tests {
             &test.path(),
             &["A.pdf".into()],
             pattern(),
+            &[],
         )
         .expect("plan");
         fs::write(
@@ -913,6 +1207,7 @@ mod tests {
             &test.path(),
             &["A.pdf".into()],
             pattern(),
+            &[],
         )
         .expect("plan");
         execute(

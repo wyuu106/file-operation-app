@@ -1,7 +1,7 @@
 use crate::models::{
     FileInfo, HistoryOperation, OperationReport,
-    Preview, RecoveryItem, RenameTemplate,
-    StoredPlan,
+    Preview, RecoveryItem, RenameInput,
+    RenameTemplate, StoredPlan,
 };
 use crate::repositories::db;
 use crate::services::operations;
@@ -119,6 +119,7 @@ pub(crate) fn preview_rename(
     path: String,
     selected: Vec<String>,
     template_id: i64,
+    inputs: Vec<RenameInput>,
 ) -> Result<Preview, String> {
     let template = {
         let conn = database(&state)?;
@@ -129,6 +130,7 @@ pub(crate) fn preview_rename(
         &path,
         &selected,
         &template.pattern,
+        &inputs,
     )?;
     let result = operations::preview(
         &plan,

@@ -13,6 +13,10 @@ const messages = {
     "テンプレートが見つからなかったよ。",
   NO_SELECTION: "変更するファイルを選んでね。",
   BAD_SELECTION: "ファイルの選択をやり直してね。",
+  INPUT_COUNT:
+    "入力情報と選択ファイルの数をそろえてね。",
+  BAD_INPUT:
+    "会社名・名前の入力内容を確認してね。",
   PLAN_EXPIRED: "プレビューを作り直してね。",
   PLAN_INVALID: "プレビューの問題を解消してね。",
   NO_UNDO: "取り消せる操作がないよ。",

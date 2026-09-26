@@ -31,6 +31,7 @@ export default function RenamePreview({
       </div>
       <p className="muted">
         必要な行だけ直接直せるよ。
+        拡張子は変更できないよ。
         実行するまではファイルは変わらない。
       </p>
       <div className="preview-list">
@@ -51,19 +52,32 @@ export default function RenamePreview({
               <label htmlFor={`target-${index}`}>
                 変更後
               </label>
-              <input
-                id={`target-${index}`}
-                value={targets[index] ?? ""}
-                onChange={(event) =>
-                  onTarget(
-                    index,
-                    event.target.value,
-                  )
-                }
-                aria-invalid={
-                  item.issues.length > 0
-                }
-              />
+              <div className="target-edit">
+                <input
+                  id={`target-${index}`}
+                  value={item.extension
+                    ? (targets[index] ?? "").slice(
+                        0,
+                        -item.extension.length,
+                      )
+                    : (targets[index] ?? "")}
+                  onChange={(event) =>
+                    onTarget(
+                      index,
+                      event.target.value +
+                        item.extension,
+                    )
+                  }
+                  aria-invalid={
+                    item.issues.length > 0
+                  }
+                />
+                {item.extension && (
+                  <span className="fixed-extension">
+                    {item.extension}
+                  </span>
+                )}
+              </div>
               {item.issues.map((issue) => (
                 <span
                   className="field-error"
