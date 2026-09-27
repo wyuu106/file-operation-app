@@ -1,25 +1,25 @@
 /**
  * @param {{inputs:import('../api').RenameInput[],
- * useCompany:boolean,useName:boolean,
+ * fields:import('../api').InputField[],
  * onChange:(index:number,key:'company'|'name',
- * value:string)=>void,onAdd:()=>void,
+ * occurrence:number,value:string)=>void,
+ * onAdd:()=>void,
  * onRemove:(index:number)=>void}} props
  */
 export default function RenameInfo({
   inputs,
-  useCompany,
-  useName,
+  fields,
   onChange,
   onAdd,
   onRemove,
 }) {
   return (
     <section className="panel info-panel">
-      <p className="eyebrow">INFORMATION</p>
+      <p className="eyebrow">STEP 2</p>
       <h2>ファイルごとの入力情報</h2>
       <p className="muted">
-        この番号と、あとで選ぶファイルの
-        番号が対応するよ。最大10件まで。
+        この番号は、あとで選ぶファイルの
+        選択順に対応します。（最大10件）
       </p>
       <div className="info-list">
         {inputs.map((input, index) => (
@@ -27,38 +27,34 @@ export default function RenameInfo({
             <strong className="order-pill">
               {index + 1}
             </strong>
-            {useCompany && (
-              <label>
-                会社名
+            {fields.map((field) => (
+              <label
+                key={`${field.kind}-${field.index}`}
+              >
+                {field.label}
                 <input
-                  value={input.company}
+                  value={field.kind === "company"
+                    ? input.companies[
+                        field.index
+                      ] ?? ""
+                    : input.names[
+                        field.index
+                      ] ?? ""}
                   onChange={(event) =>
                     onChange(
                       index,
-                      "company",
+                      field.kind,
+                      field.index,
                       event.target.value,
                     )
                   }
-                  placeholder="例：A社"
+                  placeholder={field.kind ===
+                    "company"
+                    ? "例：A社"
+                    : "例：太郎"}
                 />
               </label>
-            )}
-            {useName && (
-              <label>
-                名前
-                <input
-                  value={input.name}
-                  onChange={(event) =>
-                    onChange(
-                      index,
-                      "name",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="例：太郎"
-                />
-              </label>
-            )}
+            ))}
             <button
               className="ghost"
               aria-label={`${index + 1}件目を削除`}

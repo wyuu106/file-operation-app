@@ -21,14 +21,13 @@ export default function TemplatesView({
       <section className="panel template-panel">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">TEMPLATES</p>
             <h2>テンプレート</h2>
           </div>
           <button
             className="secondary"
             onClick={() => onEdit(null)}
           >
-            ＋ 新しく作る
+            ＋ 新規作成
           </button>
         </div>
         {templates.length ? (
@@ -60,7 +59,7 @@ export default function TemplatesView({
           </div>
         ) : (
           <div className="empty">
-            まだテンプレートはないよ
+            テンプレートが存在しません
           </div>
         )}
       </section>

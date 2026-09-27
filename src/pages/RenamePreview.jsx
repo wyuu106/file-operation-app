@@ -18,7 +18,7 @@ export default function RenamePreview({
     <section className="panel preview-panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">PREVIEW</p>
+          <p className="eyebrow">プレビュー</p>
           <h2>変更後の名前を確認</h2>
         </div>
         <button
@@ -30,9 +30,9 @@ export default function RenamePreview({
         </button>
       </div>
       <p className="muted">
-        必要な行だけ直接直せるよ。
-        拡張子は変更できないよ。
-        実行するまではファイルは変わらない。
+        変更後の名前は編集できます。
+        拡張子は変更できません。
+        実行するまでファイルは変更されません。
       </p>
       <div className="preview-list">
         {preview.items.map((item, index) => (
@@ -95,8 +95,8 @@ export default function RenamePreview({
           {checking
             ? "名前を確認中…"
             : preview.valid
-              ? `${preview.items.length}件を変更できるよ`
-              : "問題のある名前を直してね"}
+              ? `${preview.items.length}件を変更できます`
+              : "変更できないファイル名があります"}
         </span>
         <button
           className="primary danger"

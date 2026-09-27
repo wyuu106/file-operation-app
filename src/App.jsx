@@ -8,13 +8,13 @@ import HomeView from "./pages/HomeView";
 import TemplatesView from "./pages/TemplatesView";
 import {
   formattedName,
+  inputFields,
   readPattern,
 } from "./components/template";
 
-const collator = new Intl.Collator("ja", {
-  numeric: true,
-  sensitivity: "base",
-});
+function emptyInput() {
+  return { companies: [], names: [] };
+}
 
 const recoveryLabels = {
   moved: "変更後の名前で存在",
@@ -43,7 +43,7 @@ export default function App() {
   );
   const [inputs, setInputs] = useState(
     /** @type {api.RenameInput[]} */
-    ([{ company: "", name: "" }]),
+    ([emptyInput()]),
   );
   const [countMismatch, setCountMismatch] =
     useState(false);
@@ -108,30 +108,49 @@ export default function App() {
   const segments = activeTemplate
     ? readPattern(activeTemplate.pattern)
     : [];
-  const useCompany = segments.some(
-    (item) => item.kind === "company",
-  );
-  const useName = segments.some(
-    (item) => item.kind === "name",
-  );
+  const fields = inputFields(segments);
 
   /** @param {number} id */
   function chooseTemplate(id) {
     setTemplateId(id);
-    setInputs([{ company: "", name: "" }]);
+    setInputs([emptyInput()]);
     setPreview(null);
   }
 
   /** @param {number} index
    * @param {'company'|'name'} key
+   * @param {number} occurrence
    * @param {string} value */
-  function changeInput(index, key, value) {
+  function changeInput(
+    index,
+    key,
+    occurrence,
+    value,
+  ) {
     setInputs((current) =>
-      current.map((input, at) =>
-        at === index
-          ? { ...input, [key]: value }
-          : input,
-      ),
+      current.map((input, at) => {
+        if (at !== index) {
+          return input;
+        }
+        const property = key === "company"
+          ? "companies"
+          : "names";
+        const values = Array.from(
+          {
+            length: Math.max(
+              input[property].length,
+              occurrence + 1,
+            ),
+          },
+          (_, position) =>
+            input[property][position] ?? "",
+        );
+        values[occurrence] = value;
+        return {
+          ...input,
+          [property]: values,
+        };
+      }),
     );
   }
 
@@ -209,17 +228,6 @@ export default function App() {
     setPreview(null);
   }
 
-  function selectAll() {
-    const names = files.map((file) => file.name);
-    names.sort(
-      (a, b) =>
-        collator.compare(a, b) ||
-        a.localeCompare(b),
-    );
-    setSelected(names);
-    setPreview(null);
-  }
-
   function clearSelection() {
     setSelected([]);
     setPreview(null);
@@ -244,7 +252,7 @@ export default function App() {
           );
       await refreshTemplates();
       setTemplateId(saved.id);
-      setInputs([{ company: "", name: "" }]);
+      setInputs([emptyInput()]);
       setEditing(undefined);
       setPreview(null);
       setConfirmLeaving(false);
@@ -273,7 +281,7 @@ export default function App() {
       return;
     }
     if (
-      (useCompany || useName) &&
+      fields.length > 0 &&
       inputs.length !== selected.length
     ) {
       setCountMismatch(true);
@@ -284,13 +292,16 @@ export default function App() {
       return;
     }
     if (
-      (useCompany || useName) &&
-      inputs.some(
-        (input) =>
-          (useCompany &&
-            !input.company.trim()) ||
-          (useName &&
-            !formattedName(input.name)),
+      fields.length > 0 &&
+      inputs.some((input) =>
+        fields.some((field) => {
+          const value = field.kind === "company"
+            ? input.companies[field.index]
+            : input.names[field.index];
+          return field.kind === "company"
+            ? !value?.trim()
+            : !formattedName(value);
+        }),
       )
     ) {
       setError(userMessage("BAD_INPUT"));
@@ -303,7 +314,7 @@ export default function App() {
         folder,
         selected,
         templateId,
-        useCompany || useName ? inputs : [],
+        fields.length ? inputs : [],
       );
       setTargets(
         result.items.map((item) => item.newName),
@@ -397,7 +408,6 @@ export default function App() {
         <div className="brand">
           <div className="brand-mark">▤</div>
           <div>
-            <p className="eyebrow">FILE DESK</p>
             <h1>ファイル名整理</h1>
           </div>
         </div>
@@ -407,8 +417,8 @@ export default function App() {
         {reviewCount > 0 && (
           <div className="banner warning">
             前回の処理に未確認の履歴が
-            {reviewCount}件あるよ。
-            対象フォルダの状態を確認してね。
+            {reviewCount}件あります。
+            対象フォルダの状態を確認してください。
             <details>
               <summary>
                 対象ファイルを見る
@@ -454,14 +464,12 @@ export default function App() {
             templates={templates}
             templateId={templateId}
             inputs={inputs}
-            useCompany={useCompany}
-            useName={useName}
+            fields={fields}
             undoTarget={undoTarget}
             busy={busy}
             onChooseFolder={chooseFolder}
             onUndo={undo}
             onToggle={toggle}
-            onSelectAll={selectAll}
             onClear={clearSelection}
             onTemplate={chooseTemplate}
             onInputChange={changeInput}
@@ -470,7 +478,7 @@ export default function App() {
                 current.length < 10
                   ? [
                       ...current,
-                      { company: "", name: "" },
+                      emptyInput(),
                     ]
                   : current,
               )
@@ -560,7 +568,7 @@ export default function App() {
               aria-labelledby="count-title"
             >
               <h2 id="count-title">
-                件数が一致しないよ
+                件数が一致しません
               </h2>
               <p>
                 入力した情報と選択した
@@ -569,9 +577,6 @@ export default function App() {
               <p>入力情報：{inputs.length}件</p>
               <p>
                 選択ファイル：{selected.length}件
-              </p>
-              <p>
-                同じ数になるように設定してね。
               </p>
               <div className="dialog-actions">
                 <button
@@ -601,7 +606,7 @@ export default function App() {
               </h2>
               <p>
                 「{templateToDelete.name}」を
-                削除する？
+                削除しますか？
               </p>
               <div className="dialog-actions">
                 <button

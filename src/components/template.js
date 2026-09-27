@@ -15,6 +15,43 @@ export const labels = {
   literal: "固定文字",
 };
 
+/**
+ * @param {Segment[]} segments
+ * @returns {import('../api').InputField[]}
+ */
+export function inputFields(segments) {
+  const counts = { company: 0, name: 0 };
+  for (const segment of segments) {
+    if (
+      segment.kind === "company" ||
+      segment.kind === "name"
+    ) {
+      counts[segment.kind] += 1;
+    }
+  }
+  const seen = { company: 0, name: 0 };
+  return segments.flatMap((segment) => {
+    if (
+      segment.kind !== "company" &&
+      segment.kind !== "name"
+    ) {
+      return [];
+    }
+    const kind = segment.kind;
+    const index = seen[kind]++;
+    const label = kind === "company"
+      ? "会社名"
+      : "名前";
+    return [{
+      kind,
+      index,
+      label: counts[kind] > 1
+        ? `${label}${index + 1}`
+        : label,
+    }];
+  });
+}
+
 /** @param {string|undefined} value */
 export function formattedName(value) {
   const plain = value

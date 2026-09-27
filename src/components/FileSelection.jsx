@@ -1,14 +1,12 @@
 /**
  * @param {{files:import('../api').FileInfo[],
  * selected:string[],onToggle:(name:string)=>void,
- * onSelectAll:()=>void,
  * onClear:()=>void}} props
  */
 export default function FileSelection({
   files,
   selected,
   onToggle,
-  onSelectAll,
   onClear,
 }) {
   return (
@@ -24,20 +22,11 @@ export default function FileSelection({
       </div>
       <div className="file-toolbar">
         <button
-          onClick={onSelectAll}
-          disabled={!files.length}
-        >
-          すべて選択
-        </button>
-        <button
           onClick={onClear}
           disabled={!selected.length}
         >
           選択を解除
         </button>
-        <span>
-          一括選択はファイル名の順に番号が付くよ
-        </span>
       </div>
       {files.length ? (
         <div className="file-list">
@@ -77,7 +66,7 @@ export default function FileSelection({
         </div>
       ) : (
         <div className="empty">
-          このフォルダにファイルはないよ
+          選択中のフォルダにファイルが存在しません
         </div>
       )}
     </section>

@@ -6,11 +6,12 @@
 .info-row {
   display: flex;
   align-items: end;
+  flex-wrap: wrap;
   gap: 12px;
 }
 .info-row label {
   display: grid;
-  flex: 1;
+  flex: 1 1 180px;
   gap: 5px;
   min-width: 0;
   color: #546b5c;

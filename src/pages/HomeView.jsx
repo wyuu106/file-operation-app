@@ -23,14 +23,15 @@ function shownCompany(value) {
  * templates:import('../api').Template[],
  * templateId:number|null,
  * inputs:import('../api').RenameInput[],
- * useCompany:boolean,useName:boolean,
+ * fields:import('../api').InputField[],
  * undoTarget:import('../api').HistoryOperation|undefined,
  * busy:boolean,onChooseFolder:()=>void,
  * onUndo:()=>void,onToggle:(name:string)=>void,
- * onSelectAll:()=>void,onClear:()=>void,
+ * onClear:()=>void,
  * onTemplate:(id:number)=>void,
  * onInputChange:(index:number,key:'company'|'name',
- * value:string)=>void,onAddInput:()=>void,
+ * occurrence:number,value:string)=>void,
+ * onAddInput:()=>void,
  * onRemoveInput:(index:number)=>void,
  * onPreview:()=>void}} props
  */
@@ -41,14 +42,12 @@ export default function HomeView({
   templates,
   templateId,
   inputs,
-  useCompany,
-  useName,
+  fields,
   undoTarget,
   busy,
   onChooseFolder,
   onUndo,
   onToggle,
-  onSelectAll,
   onClear,
   onTemplate,
   onInputChange,
@@ -58,19 +57,6 @@ export default function HomeView({
 }) {
   return (
     <>
-      <section className="hero">
-        <p className="eyebrow">
-          かんたん、一括整理
-        </p>
-        <h2>
-          いつものファイル名変更を、
-          まとめて終わらせよう。
-        </h2>
-        <p>
-          名前のルールを選んで、情報と
-          ファイルを設定。変更前に確認できるよ。
-        </p>
-      </section>
       <section className="panel template-panel">
         <p className="eyebrow">STEP 1</p>
         <h2>名前のルール</h2>
@@ -97,16 +83,14 @@ export default function HomeView({
           </div>
         ) : (
           <div className="empty">
-            テンプレート画面で
-            名前のルールを作ってね
+            テンプレート画面でファイル名のテンプレートを作成してください
           </div>
         )}
       </section>
-      {(useCompany || useName) && (
+      {fields.length > 0 && (
         <RenameInfo
           inputs={inputs}
-          useCompany={useCompany}
-          useName={useName}
+          fields={fields}
           onChange={onInputChange}
           onAdd={onAddInput}
           onRemove={onRemoveInput}
@@ -115,13 +99,13 @@ export default function HomeView({
       <section className="panel folder-panel">
         <div>
           <p className="eyebrow">
-            {useCompany || useName
+            {fields.length
               ? "STEP 3"
               : "STEP 2"}
           </p>
           <h2>対象フォルダ</h2>
           <p className="muted path-label">
-            {folder || "まだ選択されていないよ"}
+            {folder || "フォルダが選択されていません"}
           </p>
         </div>
         <button
@@ -137,34 +121,37 @@ export default function HomeView({
           files={files}
           selected={selected}
           onToggle={onToggle}
-          onSelectAll={onSelectAll}
           onClear={onClear}
         />
       )}
       {folder &&
-        (useCompany || useName) &&
+        fields.length > 0 &&
         selected.length > 0 && (
           <section className="panel mapping-panel">
-            <h2>番号の対応</h2>
-            <p className="muted">
-              同じ番号どうしを組み合わせるよ。
-            </p>
+            <h2>ファイル名の対応</h2>
             {selected.map((name, index) => (
               <p key={name}>
-                {index + 1}. {[
-                  useCompany
-                    ? shownCompany(
-                        inputs[index]?.company,
-                      )
-                    : null,
-                  useName
-                    ? formattedName(
-                        inputs[index]?.name,
-                      )
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" / ") || "未入力"}
+                {index + 1}. {fields.map(
+                  (field) => {
+                    const value = field.kind ===
+                      "company"
+                      ? shownCompany(
+                          inputs[index]
+                            ?.companies[
+                              field.index
+                            ],
+                        )
+                      : formattedName(
+                          inputs[index]
+                            ?.names[
+                              field.index
+                            ],
+                        );
+                    return `${field.label}: ${
+                      value || "未入力"
+                    }`;
+                  },
+                ).join(" / ")}
                 {" ↔ "}{name}
               </p>
             ))}
@@ -203,7 +190,7 @@ export default function HomeView({
             </>
           ) : (
             <p className="muted">
-              取り消せる変更はないよ
+              取り消せる変更がありません
             </p>
           )}
         </div>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  defaultSegments,
   exampleName,
   labels,
   readPattern,
@@ -19,7 +18,8 @@ export default function TemplateEditor({
 }) {
   const [name, setName] = useState("");
   const [segments, setSegments] = useState(
-    defaultSegments,
+    /** @type {import('../api').Segment[]} */
+    ([]),
   );
   const [saving, setSaving] = useState(false);
 
@@ -28,7 +28,7 @@ export default function TemplateEditor({
     setSegments(
       template
         ? readPattern(template.pattern)
-        : defaultSegments,
+        : [],
     );
   }, [template]);
 
@@ -101,7 +101,6 @@ export default function TemplateEditor({
     <section className="panel editor">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">TEMPLATE</p>
           <h2>
             {template
               ? "テンプレートを編集"
@@ -136,10 +135,15 @@ export default function TemplateEditor({
           名前に入れる要素
         </span>
         <span className="muted small">
-          上から順につながるよ
+          上から順につながります
         </span>
       </div>
       <div className="segment-list">
+        {!segments.length && (
+          <p className="muted">
+            下のボタンから要素を追加してください。
+          </p>
+        )}
         {segments.map((segment, index) => (
           <div
             className="segment"
@@ -212,10 +216,14 @@ export default function TemplateEditor({
         )}
       </div>
       <div className="example-box">
-        <span>できあがりの例</span>
-        <strong>{exampleName(segments)}</strong>
+        <span>完成例</span>
+        <strong>
+          {segments.length
+            ? exampleName(segments)
+            : "要素を追加すると表示されます"}
+        </strong>
         <small>
-          拡張子は元のファイルから引き継ぐよ
+          拡張子は元のファイルから引き継がれます
         </small>
       </div>
       <div className="editor-footer">

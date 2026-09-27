@@ -28,9 +28,9 @@ pub struct Segment {
 #[derive(Clone, Deserialize)]
 pub struct RenameInput {
     #[serde(default)]
-    pub company: String,
+    pub companies: Vec<String>,
     #[serde(default)]
-    pub name: String,
+    pub names: Vec<String>,
 }
 
 #[derive(

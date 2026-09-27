@@ -206,32 +206,41 @@ fn generated_name(
     index: usize,
     input: Option<&RenameInput>,
 ) -> String {
+    let mut company_index = 0;
+    let mut name_index = 0;
     let parts: Vec<String> = segments
         .iter()
         .map(|segment| {
             match segment.kind.as_str() {
                 "date" => date.to_owned(),
                 "original" => stem(source),
-                "company" => format!(
-                    "【{}】",
-                    input
-                        .map(|value| {
-                            company_value(
-                                &value.company,
+                "company" => {
+                    let value = input
+                        .and_then(|row| {
+                            row.companies.get(
+                                company_index,
                             )
                         })
-                        .unwrap_or_default(),
-                ),
-                "name" => format!(
-                    "{}様",
-                    input
                         .map(|value| {
-                            name_value(
-                                &value.name,
-                            )
+                            company_value(value)
                         })
-                        .unwrap_or_default(),
-                ),
+                        .unwrap_or_default();
+                    company_index += 1;
+                    format!("【{value}】")
+                }
+                "name" => {
+                    let value = input
+                        .and_then(|row| {
+                            row.names
+                                .get(name_index)
+                        })
+                        .map(|value| {
+                            name_value(value)
+                        })
+                        .unwrap_or_default();
+                    name_index += 1;
+                    format!("{value}様")
+                }
                 "number" => {
                     format!("{:03}", index)
                 }
@@ -271,25 +280,37 @@ pub fn create_plan(
     if selected.is_empty() {
         return Err("NO_SELECTION".into());
     }
-    let uses_company = segments
+    let company_count = segments
         .iter()
-        .any(|segment| segment.kind == "company");
-    let uses_name = segments
+        .filter(|segment| {
+            segment.kind == "company"
+        })
+        .count();
+    let name_count = segments
         .iter()
-        .any(|segment| segment.kind == "name");
-    if uses_company || uses_name {
+        .filter(|segment| segment.kind == "name")
+        .count();
+    if company_count + name_count > 0 {
         if inputs.len() != selected.len()
             || inputs.len() > 10
         {
             return Err("INPUT_COUNT".into());
         }
         if inputs.iter().any(|input| {
-            (uses_company
-                && company_value(&input.company)
-                    .is_empty())
-                || (uses_name
-                    && name_value(&input.name)
-                        .is_empty())
+            input.companies.len() != company_count
+                || input.names.len() != name_count
+                || input.companies.iter().any(
+                    |value| {
+                        company_value(value)
+                            .is_empty()
+                    },
+                )
+                || input.names.iter().any(
+                    |value| {
+                        name_value(value)
+                            .is_empty()
+                    },
+                )
         }) {
             return Err("BAD_INPUT".into());
         }
@@ -860,12 +881,12 @@ mod tests {
         ]"#;
         let inputs = [
             RenameInput {
-                company: " B社 ".into(),
-                name: "花子".into(),
+                companies: vec![" B社 ".into()],
+                names: vec!["花子".into()],
             },
             RenameInput {
-                company: "A社".into(),
-                name: "太郎".into(),
+                companies: vec!["A社".into()],
+                names: vec!["太郎".into()],
             },
         ];
         let plan = create_plan(
@@ -908,8 +929,8 @@ mod tests {
             Some("INPUT_COUNT"),
         );
         let blank = [RenameInput {
-            company: "   ".into(),
-            name: String::new(),
+            companies: vec!["   ".into()],
+            names: vec![],
         }];
         assert_eq!(
             create_plan(
@@ -923,8 +944,8 @@ mod tests {
             Some("BAD_INPUT"),
         );
         let brackets_only = [RenameInput {
-            company: "【】".into(),
-            name: String::new(),
+            companies: vec!["【】".into()],
+            names: vec![],
         }];
         assert_eq!(
             create_plan(
@@ -945,8 +966,8 @@ mod tests {
         fs::write(test.file("A.pdf"), b"A")
             .expect("A");
         let input = [RenameInput {
-            company: "【A社】".into(),
-            name: String::new(),
+            companies: vec!["【A社】".into()],
+            names: vec![],
         }];
         let plan = create_plan(
             &test.path(),
@@ -971,8 +992,8 @@ mod tests {
             .expect("A");
         let pattern = r#"[{"kind":"name"}]"#;
         let input = [RenameInput {
-            company: String::new(),
-            name: " 太郎様 ".into(),
+            companies: vec![],
+            names: vec![" 太郎様 ".into()],
         }];
         let plan = create_plan(
             &test.path(),
@@ -989,8 +1010,8 @@ mod tests {
             preview(&plan, &plan.generated).valid
         );
         let empty_name = [RenameInput {
-            company: String::new(),
-            name: "様".into(),
+            companies: vec![],
+            names: vec!["様".into()],
         }];
         assert_eq!(
             create_plan(
@@ -1003,6 +1024,63 @@ mod tests {
             .as_deref(),
             Some("BAD_INPUT"),
         );
+    }
+
+    #[test]
+    fn repeated_fields_use_distinct_values() {
+        let test = TestFolder::new();
+        fs::write(test.file("A.pdf"), b"A")
+            .expect("A");
+        let pattern = r#"[
+            {"kind":"company"},
+            {"kind":"name"},
+            {"kind":"company"},
+            {"kind":"name"}
+        ]"#;
+        let input = [RenameInput {
+            companies: vec![
+                "A社".into(),
+                "B社".into(),
+            ],
+            names: vec![
+                "太郎".into(),
+                "花子".into(),
+            ],
+        }];
+        let plan = create_plan(
+            &test.path(),
+            &["A.pdf".into()],
+            pattern,
+            &input,
+        )
+        .expect("plan");
+        assert_eq!(
+            plan.generated[0],
+            "【A社】太郎様_【B社】花子様.pdf"
+        );
+        assert!(
+            preview(&plan, &plan.generated).valid
+        );
+
+        let missing = [RenameInput {
+            companies: vec!["A社".into()],
+            names: vec![
+                "太郎".into(),
+                "花子".into(),
+            ],
+        }];
+        assert_eq!(
+            create_plan(
+                &test.path(),
+                &["A.pdf".into()],
+                pattern,
+                &missing,
+            )
+            .err()
+            .as_deref(),
+            Some("BAD_INPUT"),
+        );
+        assert!(test.file("A.pdf").exists());
     }
 
     #[test]

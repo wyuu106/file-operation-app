@@ -15,7 +15,7 @@ const itemLabels = {
   rolled_back: "元に戻した",
   needs_review: "要確認",
   unmoved: "変更前の名前で存在",
-  uncertain: "状態を確認してね",
+  uncertain: "状態を確認してください",
 };
 
 /**
@@ -25,10 +25,9 @@ const itemLabels = {
 export default function HistoryView({ history }) {
   return (
     <section className="panel history-panel">
-      <p className="eyebrow">HISTORY</p>
       <h2>変更履歴</h2>
       <p className="muted small">
-        過去の変更内容を確認できるよ。
+        過去の変更内容を確認できます。
       </p>
       {history.length === 0 ? (
         <div className="empty">

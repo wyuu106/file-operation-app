@@ -5,7 +5,10 @@ import { invoke } from "@tauri-apps/api/core";
  * @typedef {{id:number,name:string,pattern:string,
  * createdAt:string,updatedAt:string}} Template
  * @typedef {{kind:string,value:string}} Segment
- * @typedef {{company:string,name:string}} RenameInput
+ * @typedef {{companies:string[],names:string[]}}
+ * RenameInput
+ * @typedef {{kind:'company'|'name',
+ * index:number,label:string}} InputField
  * @typedef {{originalName:string,newName:string,
  * extension:string,issues:string[]}} PlanItem
  * @typedef {{id:string,items:PlanItem[],
